@@ -1,9 +1,17 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { GeminiService } from '../../services/gemini.service';
 import { ToastService } from '../../services/toast.service';
 import { GameCardComponent } from '../game-card/game-card.component';
+
+interface Game {
+  title: string;
+  description: string;
+  imageUrl: string;
+  rating: string;
+  genre: string;
+}
 
 @Component({
   selector: 'app-home',
@@ -78,34 +86,66 @@ import { GameCardComponent } from '../game-card/game-card.component';
         </div>
       </div>
 
-      <!-- Featured Games Grid -->
+      <!-- Featured Games Grid with Filters -->
       <div class="animate-slide-up delay-300">
-        <h2 class="text-2xl font-bold text-white mb-6">Juegos Destacados</h2>
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+          <h2 class="text-2xl font-bold text-white">Juegos Destacados</h2>
+          
+          <!-- Filter Scroll View -->
+          <div class="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide mask-fade-right">
+            <button 
+              (click)="selectedGenre.set('Todos')"
+              class="whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 border"
+              [class.bg-cyan-600]="selectedGenre() === 'Todos'"
+              [class.border-cyan-500]="selectedGenre() === 'Todos'"
+              [class.text-white]="selectedGenre() === 'Todos'"
+              [class.bg-slate-800]="selectedGenre() !== 'Todos'"
+              [class.border-slate-700]="selectedGenre() !== 'Todos'"
+              [class.text-slate-400]="selectedGenre() !== 'Todos'"
+              [class.hover:text-white]="selectedGenre() !== 'Todos'"
+              [class.hover:bg-slate-700]="selectedGenre() !== 'Todos'"
+            >
+              Todos
+            </button>
+            
+            @for (genre of filterGenres; track genre) {
+              <button 
+                (click)="selectedGenre.set(genre)"
+                class="whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 border"
+                [class.bg-purple-600]="selectedGenre() === genre"
+                [class.border-purple-500]="selectedGenre() === genre"
+                [class.text-white]="selectedGenre() === genre"
+                [class.shadow-lg]="selectedGenre() === genre"
+                [class.shadow-purple-500_30]="selectedGenre() === genre"
+                [class.bg-slate-800]="selectedGenre() !== genre"
+                [class.border-slate-700]="selectedGenre() !== genre"
+                [class.text-slate-400]="selectedGenre() !== genre"
+                [class.hover:text-white]="selectedGenre() !== genre"
+                [class.hover:bg-slate-700]="selectedGenre() !== genre"
+              >
+                {{ genre }}
+              </button>
+            }
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <app-game-card 
-            title="Cyber Odyssey 2077" 
-            description="Explora una metrópolis de neón donde cada decisión cambia tu código genético."
-            imageUrl="https://picsum.photos/400/300?random=1"
-            rating="9.8"
-          ></app-game-card>
-          <app-game-card 
-            title="Star Field Legends" 
-            description="Combates espaciales masivos en el borde de la galaxia conocida."
-            imageUrl="https://picsum.photos/400/300?random=2"
-            rating="8.9"
-          ></app-game-card>
-          <app-game-card 
-            title="Ancient Souls" 
-            description="Un RPG de acción brutal ambientado en ruinas mitológicas."
-            imageUrl="https://picsum.photos/400/300?random=3"
-            rating="9.5"
-          ></app-game-card>
-          <app-game-card 
-            title="Speed Demon X" 
-            description="Carreras antigravedad a velocidades hipersónicas."
-            imageUrl="https://picsum.photos/400/300?random=4"
-            rating="9.1"
-          ></app-game-card>
+          @for (game of filteredGames(); track game.title) {
+            <div class="animate-fade-in">
+              <app-game-card 
+                [title]="game.title" 
+                [description]="game.description"
+                [imageUrl]="game.imageUrl"
+                [rating]="game.rating"
+                (viewDetails)="handleGameClick($event)"
+              ></app-game-card>
+            </div>
+          } @empty {
+            <div class="col-span-full py-12 text-center bg-slate-800/30 rounded-2xl border border-dashed border-slate-700">
+              <p class="text-slate-400">No hay juegos destacados en esta categoría por el momento.</p>
+              <button (click)="selectedGenre.set('Todos')" class="mt-4 text-cyan-400 hover:text-cyan-300 underline">Ver todos</button>
+            </div>
+          }
         </div>
       </div>
 
@@ -119,6 +159,78 @@ export class HomeComponent implements OnInit {
   
   newsList = signal<any[]>([]);
   loadingNews = signal(true);
+
+  // Filter Logic
+  selectedGenre = signal<string>('Todos');
+  filterGenres = ['RPG', 'FPS', 'Estrategia', 'Carreras', 'Aventura', 'Terror', 'Indie'];
+
+  // Mock Data moved from HTML to TS for filtering capability
+  games = signal<Game[]>([
+    {
+      title: 'Cyber Odyssey 2077',
+      description: 'Explora una metrópolis de neón donde cada decisión cambia tu código genético.',
+      imageUrl: 'https://picsum.photos/400/300?random=1',
+      rating: '9.8',
+      genre: 'RPG'
+    },
+    {
+      title: 'Star Field Legends',
+      description: 'Combates espaciales masivos en el borde de la galaxia conocida.',
+      imageUrl: 'https://picsum.photos/400/300?random=2',
+      rating: '8.9',
+      genre: 'Estrategia'
+    },
+    {
+      title: 'Ancient Souls',
+      description: 'Un RPG de acción brutal ambientado en ruinas mitológicas.',
+      imageUrl: 'https://picsum.photos/400/300?random=3',
+      rating: '9.5',
+      genre: 'RPG'
+    },
+    {
+      title: 'Speed Demon X',
+      description: 'Carreras antigravedad a velocidades hipersónicas.',
+      imageUrl: 'https://picsum.photos/400/300?random=4',
+      rating: '9.1',
+      genre: 'Carreras'
+    },
+    {
+      title: 'Shadow Ops: Blackout',
+      description: 'Infiltración táctica en bases enemigas generadas proceduralmente.',
+      imageUrl: 'https://picsum.photos/400/300?random=5',
+      rating: '8.7',
+      genre: 'FPS'
+    },
+    {
+      title: 'Pixel Quest Returns',
+      description: 'Una carta de amor a los juegos de 16-bits con mecánicas modernas.',
+      imageUrl: 'https://picsum.photos/400/300?random=6',
+      rating: '9.3',
+      genre: 'Indie'
+    },
+    {
+      title: 'The Silent Corridor',
+      description: 'Sobrevive en una estación espacial abandonada donde el sonido atrae a la muerte.',
+      imageUrl: 'https://picsum.photos/400/300?random=7',
+      rating: '9.0',
+      genre: 'Terror'
+    },
+    {
+      title: 'Lost Horizon',
+      description: 'Descubre los secretos de una civilización perdida en un mundo abierto vibrante.',
+      imageUrl: 'https://picsum.photos/400/300?random=8',
+      rating: '9.6',
+      genre: 'Aventura'
+    }
+  ]);
+
+  filteredGames = computed(() => {
+    const genre = this.selectedGenre();
+    if (genre === 'Todos') {
+      return this.games();
+    }
+    return this.games().filter(g => g.genre === genre);
+  });
 
   async ngOnInit() {
     this.loadingNews.set(true);
@@ -135,5 +247,9 @@ export class HomeComponent implements OnInit {
     } finally {
       this.loadingNews.set(false);
     }
+  }
+
+  handleGameClick(title: string) {
+    this.toastService.show(`Abriendo detalles de: ${title}`, 'info');
   }
 }

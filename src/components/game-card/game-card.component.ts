@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 
 @Component({
@@ -25,7 +25,10 @@ import { CommonModule, NgOptimizedImage } from '@angular/common';
           <span class="bg-cyan-900 text-cyan-200 text-xs px-2 py-1 rounded-full border border-cyan-700 shadow shadow-cyan-900/50">{{ rating() }}</span>
         </div>
         <p class="text-slate-300 text-sm mb-4 flex-1">{{ description() }}</p>
-        <button class="w-full py-2 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg text-white font-semibold text-sm hover:from-purple-500 hover:to-cyan-500 hover:scale-105 hover:shadow-cyan-500/50 transition-all duration-300 shadow-lg shadow-purple-900/20 active:scale-95">
+        <button 
+          (click)="onViewDetails($event)"
+          class="w-full py-2 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg text-white font-semibold text-sm hover:from-purple-500 hover:to-cyan-500 hover:scale-105 hover:shadow-cyan-500/50 transition-all duration-300 shadow-lg shadow-purple-900/20 active:scale-95"
+        >
           Ver Detalles
         </button>
       </div>
@@ -37,4 +40,12 @@ export class GameCardComponent {
   description = input.required<string>();
   rating = input<string>('9.5');
   imageUrl = input<string>('https://picsum.photos/400/300');
+
+  // Output event when details button is clicked
+  viewDetails = output<string>();
+
+  onViewDetails(event: Event) {
+    event.stopPropagation(); // Prevent triggering card click if we add one later
+    this.viewDetails.emit(this.title());
+  }
 }
